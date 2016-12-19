@@ -29,6 +29,7 @@ Solver.Slider = function() {
 	this.b1 = 0.0; // anchor zone for another slider
 	this.ia = 0; // -1 for fixed or index of parent slider
 	this.ib = 0; // -1 or index of parent slider
+	this.raw = ''; // used for export
 	// computed
 	this.ic = []; // list of slider indexes to ignore for perpendicular constraints
 	this.a = 0.0; // force field affected part
@@ -45,7 +46,7 @@ Solver.Slider = function() {
 	this.x1 = 0.0;  // temp variables for solver
 };
 
-Solver.prototype.slider_add = function(ia,ib,x,y,a0,a1,b0,b1,z,_h){
+Solver.prototype.slider_add = function(ia,ib,x,y,a0,a1,b0,b1,Z,_h){
 	var sliders = this.sliders, num = sliders.length;
 	var s = new Solver.Slider, q = 0.0;
 	if(a0 > a1) { q=a0; a0=a1; a1=q; }
@@ -54,7 +55,7 @@ Solver.prototype.slider_add = function(ia,ib,x,y,a0,a1,b0,b1,z,_h){
 	s.y = y; s.vy = 0.0; s.ay = 0.0;
 	s.ia = ia; s.a0 = a0; s.a1 = a1;
 	s.ib = -1; s.b0 = b0; s.b1 = b1;
-	s.Z = z; /* Half size */
+	s.Z = Z; /* Half size */
 	if((ib >= 0) && (ib < num)) {
 		sliders[ib].ib = num;
 	}
@@ -84,7 +85,8 @@ Solver.prototype.graph = function(w,h,data){
 
     */
 
-	this.sliders.length = 0; this._w = w; this._h = h;
+	this.sliders.length = 0; this.raw = ''; this._w = w; this._h = h;
+	
 	this.slider_add(-1,-1, 0, 0, -5, h+5, 0, 0, 0, 0); /* left */
 	for(var i=0, l=data.length; i<l; i++) {
 		var a = data[i];
@@ -105,6 +107,14 @@ Solver.prototype.graph = function(w,h,data){
 	}
 	this.slider_add(-1,-1, w, 0, -5, h+5, 0, 0, 0, 0); /* right */
 	this.slider_end();
+	
+	/* raw data */
+	var sliders = this.sliders;
+	for(var i=0, l=sliders.length; i<l; i++) {
+		var s = sliders[i];
+		this.raw += [s.ia,s.ib,s.x,s.y,s.a0,s.a1,s.b0,s.b1,s.Z,s._horizontal].toString()+'\n';
+	}
+	return this.raw;
 };
 
 Solver.prototype.slider_end = function(){
@@ -624,15 +634,4 @@ Solver.prototype.draw = function() {
 	}
 	ctx.translate(-offset, -offset);
 };
-
-
-function animate(sv) {
-	// stop if solution found or stuck
-	if(sv.mode < 4) {
-		sv.solve();
-		sv.update();
-	}
-	sv.draw();
-	window.setTimeout(animate, 1000 / 30, sv);
-}
 
